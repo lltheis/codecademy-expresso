@@ -61,14 +61,11 @@ employeesRouter.post('/', (req, res, next) => {
       next(error);
       return; 
 	} else {
+    console.log('\n=============================================\n')
     console.log(this.lastID);
+    console.log('\n=============================================\n')
 		db.get(`SELECT * FROM Employee WHERE Employee.id = ${this.lastID}`,
 			(error, employee) => {
-        console.log('\n=============================================\n')
-
-
-console.log(employee)
-console.log('\n=============================================\n')
 				res.status(201).json({employee: employee});
 			});
 		}
