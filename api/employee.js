@@ -56,14 +56,11 @@ employeesRouter.post('/', (req, res, next) => {
     	$name: employeeData.name,
     	$position: employeeData.position,
     	$wage: employeeData.wage
-    }, (error) => {
+    }, function(error) {
       if (error) {
       next(error);
       return; 
 	} else {
-    console.log('\n=============================================\n')
-    console.log(this.lastID);
-    console.log('\n=============================================\n')
 		db.get(`SELECT * FROM Employee WHERE Employee.id = ${this.lastID}`,
 			(error, employee) => {
 				res.status(201).json({employee: employee});
@@ -85,7 +82,7 @@ employeesRouter.put('/:employeeId', (req, res, next) => {
       $name: employeeData.name,
       $position: employeeData.position,
       $wage: employeeData.wage
-  }, (error) => {
+  }, function(error) {
     if (error) {
     next(error) 
   } else {

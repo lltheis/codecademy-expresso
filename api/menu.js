@@ -11,16 +11,16 @@ function hasRequiredMenuFields(menuData) {
 }
 
 // Does an menu with this ID exist in the DB?
-menuRouter.param('menuId', (req, res, next, menuId) => {
-  const sqlQuery = 'SELECT * FROM Menu WHERE Menu.id = $menuId';
-  const menuValues = {$menuId: menuId};
-  db.get(sqlQuery, menuValues, (error, menu) => {
+menuRouter.param('menuId', (req, res, next, id) => {
+  const menuId = Number(id);
+  db.get('SELECT * FROM Menu WHERE id = $id', { $id: menuId }, (error, menu) => {
     if (error) {
       next(error);
     } else if (menu) {
+      req.menu = menu;
       next();
     } else {
-      res.sendStatus(404);
+      res.status(404).send();
     }
   });
 });
@@ -46,7 +46,7 @@ menuRouter.post('/', (req, res, next) => {
 
   db.run('INSERT INTO Menu (title) VALUES ($title)', {
     $title: menuData.title,
-  }, (error) => {
+  }, function(error) {
     if (error) {
       next(error);
       return;
@@ -76,7 +76,7 @@ menuRouter.put('/:menuId', (req, res, next) => {
   db.run('UPDATE Menu SET title = $title WHERE $id = $id', {
     $title: menuData.title,
     $id: menuId,
-  }, (error) => {
+  }, function(error) {
     if (error) {
       next(error);
       return;

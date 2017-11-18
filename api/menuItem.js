@@ -4,88 +4,114 @@ const menuItemRouter = express.Router();
 const sqlite3 = require('sqlite3');
 const db = new sqlite3.Database(process.env.TEST_DATABASE || './database.sqlite');
 
-menuItemRouter.param('menuItemId', (req, res, next, menuItemId) => {
-  const sqlQuery = 'SELECT * FROM MenuItem WHERE MenuItem.id = $menuItemId';
-  const menuItemValues = {$menuItemId: menuItemId};
-  db.get(sqlQuery, menuItemValues, (error, menuItem) => {
+// Does a menu item have all the required fields?
+function requiredMenItemFields(menuItemData) {
+  return menuItemData.name &&
+  menuItemData.inventory &&
+  menuItemData.price;
+}
+
+
+// Does a menu item with this ID exist in the DB?
+menuItemRouter.param('menuItemId', (req, res, next, id) => {
+  const menuItemId = Number(id);
+  db.get('SELECT * FROM MenuItem WHERE id = $id', { $id: menuItemId }, (error, menuItem) => {
     if (error) {
       next(error);
     } else if (menuItem) {
       req.menuItem = menuItem;
       next();
     } else {
-      res.sendStatus(404);
+      res.status(404).send();
     }
   });
 });
 
+// Get all menu items
 menuItemRouter.get('/', (req, res, next) => {
-  db.all('SELECT * FROM MenuItem',
-    (err, menuItem) => {
-      if (err) {
-        next(err);
+  const menu = req.menu;
+  db.all('SELECT * FROM MenuItem WHERE menu_id = $menu_id', { $menu_id: menu.id },
+    (error, menuItems) => {
+      if (error) {
+        next(error);
       } else {
-        res.status(200).json({menuItem: menuItem});
+        res.status(200).json({menuItems: menuItems});
       }
     });
 });
 
+// Get an individual menu item
 menuItemRouter.get('/:menuItemId', (req, res, next) => {
-  res.status(200).json({menuItem: req.menuItem});
+  res.status(200).json({menuItems: mnuItems});
 });
 
+// Add a new menu item
 menuItemRouter.post('/', (req, res, next) => {
-	const name = req.body.menuItem.name,
-        description = req.body.menuItem.description;
-  if (!name || !description) {
-    return res.sendStatus(400);
+  const menu = req.menu;
+  const menuItemData = req.body.menuItem;
+
+  if (!requiredMenItemFields(menuItemData)) {
+    return res.status(400).send();
   }
 
-const insertMenuItem = 'INSERT INTO MenuItem (name, description) VALUES ($name, $description)';
-const insertMenuItemValues = {
-	$name: name,
-	$description: description
-};
-
-db.run(insertMenuItem, insertMenuItemValues, function(error) {
-	if (error) {
-		next(error) 
-	} else {
-		db.get(`SELECT * FROM MenuItem WHERE MenuItem.id = ${this.lastID}`,
-			(error, menuItem) => {
-				res.status(201).json({menuItem: menuItem});
-			});
-		}
-	});
-});
-
-menuItemRouter.put('/:menuItemId', (req, res, next) => {
-  const name = req.body.menuItem.name,
-        description = req.body.menuItem.description;
-  if (!name || !description) {
-    return res.sendStatus(400);
-  }
-
-  const sqlQuery = 'UPDATE MenuItem SET name = $name, description = $description ' +
-      'WHERE MenuItem.id = $menuItemId';
-  const menuItemValues = {
-    $name: name,
-    $description: description,
-    $menuItemId: req.params.menuItemId
-  };
-
-  db.run(sqlQuery, menuItemValues, (error) => {
+  db.run('INSERT INTO MenuItem (name, description, inventory, price, menu_id) VALUES ($name, $description, $inventory, $price, $menu_id)', {
+    $name: menuItemData.name,
+    $description: menuItemData.description,
+    $inventory: menuItemData.inventory,
+    $price: menuItemData.price,
+    $menu_id: menu.id,
+  }, function(error) {
     if (error) {
       next(error);
-    } else {
-      db.get(`SELECT * FROM MenuItem WHERE MenuItem.id = ${req.params.menuItemId}`,
-        (error, menuItem) => {
-          res.status(200).json({menuItem: menuItem});
-        });
+      return;
     }
+    db.get('SELECT * FROM MenuItem WHERE id = $id', { $id: this.lastID }, (error, menuItem) => {
+      if (error) {
+        next(error);
+        return;
+      }
+      res.status(201).send({ menuItem });
+    });
+  });
+
+});
+
+// Update a new menu item
+menuItemRouter.put('/:menuItemId', (req, res, next) => {
+  const menuItemData = req.body.menuItem;
+  const menuItemId = req.menuItem.id;
+  const menu = req.menu;
+
+  if (!requiredMenItemFields(menuItemData)) {
+    res.status(400).send();
+    return;
+  }
+
+  db.run('UPDATE MenuItem SET name = $name, description = $description, inventory = $inventory, price = $price WHERE menuItem.id = $id', {
+    $name: menuItemData.name,
+    $description: menuItemData.description,
+    $inventory: menuItemData.inventory,
+    $price: menuItemData.price,
+    // $menu_id: menu.id,
+    $id: menuItemId,
+  }, function(error) {
+    if (error) {
+      next(error);
+      return;
+    }
+
+    db.get('SELECT * FROM MenuItem WHERE id = $id', { $id: menuItemId }, (error, menuItem) => {
+      if (error) {
+      next(error);
+      return;
+      }
+
+      res.status(200).send({ menuItem });
+    });
   });
 });
 
+// Delete a new menu item
 menuItemRouter.delete('/:menuItemId', (req, res, next) => {
   const issueSql = 'SELECT * FROM Issue WHERE Issue.menuItem_id = $menuItemId';
   const issueValues = {$menuItemId: req.params.menuItemId};

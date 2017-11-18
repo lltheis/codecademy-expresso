@@ -61,7 +61,7 @@ timesheetRouter.post('/', (req, res, next) => {
     $rate: newTimesheet.rate,
     $date: newTimesheet.date,
     $employee_id: newTimesheet.employeeId,
-  }, (error) => {
+  }, function(error) {
     if (error) {
       next(error);
       return;
@@ -94,7 +94,7 @@ timesheetRouter.put('/:timesheetId', (req, res, next) => {
       $date: updatedTimesheet.date,
       $employee_id: updatedTimesheet.employeeId,
       $id: updatedTimesheet.timesheetId,
-  }, (error) => {
+  }, function(error) {
     if (error) {
       next(error);
       return;
