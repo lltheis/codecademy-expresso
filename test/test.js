@@ -11,7 +11,7 @@ const seed = require('./seed.js');
 const prodDb = new sqlite3.Database('./database.sqlite');
 const testDb = new sqlite3.Database(process.env.TEST_DATABASE);
 
-/* describe('Employee Table', function() {
+describe('Employee Table', function() {
   it('should exist', function(done) {
     prodDb.get("SELECT name FROM sqlite_master WHERE type='table' AND name='Employee'", (error, table) => {
       if (error || !table) {
@@ -527,7 +527,7 @@ describe('DELETE /api/employees/:id', function() {
           expect(employee.is_current_employee).to.equal(0);
         });
   });
-}); */
+});
 
 describe('GET /api/employees/:employeeId/timesheets', function() {
   before(function(done) {
